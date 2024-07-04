@@ -10,7 +10,7 @@ def valid_file(arg):
         raise argparse.ArgumentTypeError(f"The file {arg} does not exist.")
     return arg
 
-def extract_vulnerabilities(nessus_data):
+def extract_vulnerabilities(nessus_data, custom_field_id):
     vulnerabilities = []
     processed_plugin_ids = set()  # Track processed plugin IDs
 
@@ -42,7 +42,7 @@ def extract_vulnerabilities(nessus_data):
                                 'title': item['@pluginName'],
                                 'customFields': [
                                     {
-                                        'customField': '658354962f5302001620d620',
+                                        'customField': custom_field_id,
                                         'text': plugin_id
                                     }
                                 ],
@@ -56,11 +56,11 @@ def extract_vulnerabilities(nessus_data):
 
     return vulnerabilities
 
-def convert_nessus_to_yaml(nessus_file_path, yaml_output_path):
+def convert_nessus_to_yaml(nessus_file_path, custom_field_id, yaml_output_path):
     with open(nessus_file_path, 'r') as file:
         nessus_data = xmltodict.parse(file.read())
 
-    vulnerabilities = extract_vulnerabilities(nessus_data)
+    vulnerabilities = extract_vulnerabilities(nessus_data, custom_field_id)
 
     with open(yaml_output_path, 'w') as yaml_file:
         yaml.dump(vulnerabilities, yaml_file, default_flow_style=False)
@@ -70,17 +70,19 @@ def convert_nessus_to_yaml(nessus_file_path, yaml_output_path):
 def main():
     parser = argparse.ArgumentParser(description='Extract vulnerabilities from Nessus file and output as YAML.')
     parser.add_argument('input_nessus', type=valid_file, help='Input Nessus file path')
+    parser.add_argument('id_custom_field', type=str, help='The custom field ID to store the Plugin ID')
     parser.add_argument('-o', '--output', help='Optional: Output YAML file path')
 
     args = parser.parse_args()
 
     input_path = args.input_nessus
+    field_id = args.id_custom_field
     output_path = args.output
 
     if not output_path:
         output_path = os.path.splitext(input_path)[0] + '_vulnerabilities.yml'
 
-    convert_nessus_to_yaml(input_path, output_path)
+    convert_nessus_to_yaml(input_path, field_id, output_path)
 
 if __name__ == "__main__":
     main()
